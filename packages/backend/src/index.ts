@@ -6,7 +6,27 @@
  * Happy hacking!
  */
 
+import { ProxyAgent } from 'proxy-agent';
+import http from 'http';
+import https from 'https';
+
+/*
+  Something to note here, this might need different configuration depending on your own setup.
+  If you only have an http_proxy then you'll need to set that as both the http and https globalAgent instead.
+*/
+if (process.env.HTTP_PROXY) {
+  http.globalAgent = new ProxyAgent();
+}
+
+if (process.env.HTTPS_PROXY) {
+  https.globalAgent = new ProxyAgent();
+}
+
 import { createBackend } from '@backstage/backend-defaults';
+import {
+  gitlabPlugin,
+  catalogPluginGitlabFillerProcessorModule,
+} from '@immobiliarelabs/backstage-plugin-gitlab-backend';
 
 const backend = createBackend();
 
@@ -20,6 +40,8 @@ backend.add(import('@backstage/plugin-auth-backend'));
 // See https://backstage.io/docs/backend-system/building-backends/migrating#the-auth-plugin
 backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
 // See https://github.com/backstage/backstage/blob/master/docs/auth/guest/provider.md
+backend.add(import('@backstage/plugin-auth-backend-module-github-provider'));
+backend.add(import('@backstage/plugin-auth-backend-module-gitlab-provider'));
 
 // catalog plugin
 backend.add(import('@backstage/plugin-catalog-backend/alpha'));
@@ -37,5 +59,11 @@ backend.add(
 backend.add(import('@backstage/plugin-search-backend/alpha'));
 backend.add(import('@backstage/plugin-search-backend-module-catalog/alpha'));
 backend.add(import('@backstage/plugin-search-backend-module-techdocs/alpha'));
+
+backend.add(import('@backstage/plugin-scaffolder-backend-module-github'));
+backend.add(import('@backstage/plugin-jenkins-backend'));
+backend.add(gitlabPlugin);
+backend.add(catalogPluginGitlabFillerProcessorModule);
+backend.add(import('./plugins/kubernetes'));
 
 backend.start();

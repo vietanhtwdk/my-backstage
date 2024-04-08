@@ -30,6 +30,12 @@ backend:
   database:
     client: better-sqlite3
     connection: ':memory:'
+    # client: pg
+    # connection:
+    #   host: ${POSTGRES_HOST}
+    #   port: ${POSTGRES_PORT}
+    #   user: ${POSTGRES_USER}
+    #   password: ${POSTGRES_PASSWORD}
   # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
 
 integrations:
@@ -42,6 +48,10 @@ integrations:
     # - host: ghe.example.net
     #   apiBaseUrl: https://ghe.example.net/api/v3
     #   token: ${GHE_TOKEN}
+  gitlab:
+    - host: gitlab.com
+      token: ${GITLAB_TOKEN}
+
 
 proxy:
   ### Example for how to add a proxy endpoint for the frontend.
@@ -50,6 +60,15 @@ proxy:
   #   '/test':
   #     target: 'https://example.com'
   #     changeOrigin: true
+  endpoints:
+    '/argocd/api':
+      target: https://localhost:42555/api/v1/
+      changeOrigin: true
+      # only if your argocd api has self-signed cert
+      secure: false
+      headers:
+        Authorization: ${ARGOCD_AUTH}
+
 
 # Reference documentation http://backstage.io/docs/features/techdocs/configuration
 # Note: After experimenting with basic setup, use CI/CD to generate docs
@@ -64,9 +83,24 @@ techdocs:
 
 auth:
   # see https://backstage.io/docs/auth/ to learn about auth providers
+  environment: development
   providers:
     # See https://backstage.io/docs/auth/guest/provider
     guest: {}
+    github:
+      development:
+        clientId: ${GITHUB_CLIENT_ID}
+        clientSecret: ${GITHUB_CLIENT_SECRET}
+        signIn:
+          resolvers:
+            - resolver: usernameMatchingUserEntityName
+    gitlab:
+      development:
+        clientId: ${GITLAB_CLIENT_ID}
+        clientSecret: ${GITLAB_CLIENT_SECRET}
+        signIn:
+          resolvers:
+            - resolver: usernameMatchingUserEntityName
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
@@ -94,6 +128,8 @@ catalog:
       rules:
         - allow: [User, Group]
 
+    - type: url
+      target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/components/artist-lookup-component.yaml
     ## Uncomment these lines to add more example data
     # - type: url
     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml
@@ -103,3 +139,61 @@ catalog:
     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
     #   rules:
     #     - allow: [User, Group]
+
+jenkins:
+  instances:
+    - name: default
+      baseUrl: ${JENKINS_URL}
+      username: ${JENKINS_USER_NAME}
+      apiKey: ${JENKINS_API_KEY}
+
+kubernetes:
+  serviceLocatorMethod:
+    type: 'singleTenant'
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - url: ${K8S_URL}
+          name: kind
+          authProvider: 'serviceAccount'
+          skipTLSVerify: true
+          skipMetricsLookup: true
+          serviceAccountToken: ${K8S_SERVICE_ACCOUNT_TOKEN}
+          # serviceAccountToken: .eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImJhY2tzdGFnZS1zZXJ2aWNlLWFjY291bnQtdG9rZW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiYmFja3N0YWdlLXNlcnZpY2UtYWNjb3VudCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjMyMTBlNTdhLTk3OTYtNGVjNy1iMzBkLWYwY2Y5MTA4NzRlMCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OmJhY2tzdGFnZS1zZXJ2aWNlLWFjY291bnQifQ.JemaWSrbxQGTe4uVwDd0uiIsBCUrVmNnoOSRSPDI9wGLiq8uF-JdXxtvf1AtkUVvjxg10Knq0KSCWUSeKQK3Z70f52XXuT-Uw_FSTQIOYA5j7Tlyz9vVcNMHPEfB6bBSY8LgXWbt8hlxg0Ug3zWgQgXXjNeWrggyG2F2GNa1GG_wOwmfLIYkTJJHT1XJ40O0lWj0ZBpOJ3k_DLBfHudqt8kR7OQxR6lrpJZLFuMDRoRjTuqVvnPDHTmFWn7LGLKiWATzBJWiEvHCkgJCEw9UH717D8Fx7rxXlVrvZkP2BDoOzi_WCoBGEaj3uE9_vpTHD6PpSmFaoE4-V1HrV4zo_g
+          dashboardUrl: ${K8S_DASH_BOARD_URL} 
+          dashboardApp: standard
+          # caData: |- 
+          #   -----BEGIN CERTIFICATE-----
+          #   MIIC/jCCAeagAwIBAgIBADANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDEwprdWJl
+          #   cm5ldGVzMB4XDTI0MDQwNDA5MDI0MloXDTM0MDQwMjA5MDI0MlowFTETMBEGA1UE
+          #   AxMKa3ViZXJuZXRlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANQ7
+          #   W4iN4F+SOF6wS8XQUuKqOea62DYX+u4e7CdiqpvNhOePC/pL8+xO1OyPJeneziIl
+          #   dko8MPAPnq3Wnz8eBTkR3h2jjk9wWC17GZjMcWpFfUHQX7B/d6dm7YS/bJMLlspn
+          #   muvdKFr2lglzpaav9tmfBojpojDWzbZwrPzX71uqgMSuxIuPMOm9s+EtNRyMSq48
+          #   4junUoDPSQpkqxKkO1x+GkyENy9fPP7bqGC6Ydx6kAVFsJtIK6zi6Tc3O5YS2aAc
+          #   OFT/+2UfWzwb71NchOVuTzaUAe5+Dz/u/eZotgYiCmKl1OyUwPN/811bPZZ4nst8
+          #   mq4hcqDM54n02X+0TCsCAwEAAaNZMFcwDgYDVR0PAQH/BAQDAgKkMA8GA1UdEwEB
+          #   /wQFMAMBAf8wHQYDVR0OBBYEFNmSZ/IPfCkq/6s9MaP9DxtWmbiMMBUGA1UdEQQO
+          #   MAyCCmt1YmVybmV0ZXMwDQYJKoZIhvcNAQELBQADggEBADSnDRGVO1JV2SzdTMAO
+          #   nkHtHbRZ3PyXjZM8sg1TV8cR5VatcWGVC6UN6S8PkKobN9NIhPjtJd5WZfM2NXPV
+          #   gXH5dScKUGGX/+9QGfq6AZRF7kiq7UcXw/WkqTr/zITwOp2pNqCiiKfc/tkgsPu+
+          #   eKQ08sNargM9ZiM3bwpN13oXvL0/A+A/yc0VIM3Ilhk5CLhZD6BJTkG+C3KyCLLh
+          #   OoPUc8jXIw2fLqXRiUK6Z0r9xHixWIW7Yf7yrN6rPRMaiztPt2UtuiUe6GbEE/Gw
+          #   PF9sapiI0TGt7/U2dUoCFhzrqfQ6o0h0iTUW6v1rTxr8Te9LXExOXp+LvWS4KiyT
+          #   iwY=
+          #   -----END CERTIFICATE-----
+          caFile: ${K8S_CA_FILE} # local path to CA file
+          # customResources:
+          #   - group: 'argoproj.io'
+          #     apiVersion: 'v1alpha1'
+          #     plural: 'rollouts'
+    #     - url: http://127.0.0.2:9999
+    #       name: aws-cluster-1
+    #       title: 'My AWS Cluster Number One'
+    #       authProvider: 'aws'
+    # - type: 'gke'
+    #   projectId: 'gke-clusters'
+    #   region: 'europe-west1'
+    #   skipTLSVerify: true
+    #   skipMetricsLookup: true
+    #   exposeDashboard: true

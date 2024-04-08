@@ -57,6 +57,33 @@ import {
 
 import { TechDocsAddons } from '@backstage/plugin-techdocs-react';
 import { ReportIssue } from '@backstage/plugin-techdocs-module-addons-contrib';
+import {
+  EntityCircleCIContent,
+  isCircleCIAvailable,
+} from '@circleci/backstage-plugin';
+import {
+  isGitlabAvailable,
+  EntityGitlabContent,
+  EntityGitlabLanguageCard,
+  EntityGitlabMergeRequestsTable,
+  EntityGitlabMergeRequestStatsCard,
+  EntityGitlabPeopleCard,
+  EntityGitlabPipelinesTable,
+  EntityGitlabReadmeCard,
+  EntityGitlabReleasesCard,
+} from '@immobiliarelabs/backstage-plugin-gitlab';
+
+import {
+  EntityJenkinsContent,
+  EntityLatestJenkinsRunCard,
+  isJenkinsAvailable,
+} from '@backstage/plugin-jenkins';
+import {
+  EntityArgoCDOverviewCard,
+  isArgocdAvailable,
+} from '@roadiehq/backstage-plugin-argo-cd';
+
+import { EntityKubernetesContent } from '@backstage/plugin-kubernetes';
 
 const techdocsContent = (
   <EntityTechdocsContent>
@@ -72,6 +99,14 @@ const cicdContent = (
   <EntitySwitch>
     <EntitySwitch.Case if={isGithubActionsAvailable}>
       <EntityGithubActionsContent />
+    </EntitySwitch.Case>
+
+    <EntitySwitch.Case if={isCircleCIAvailable}>
+      <EntityCircleCIContent />
+    </EntitySwitch.Case>
+
+    <EntitySwitch.Case if={isJenkinsAvailable}>
+      <EntityJenkinsContent />
     </EntitySwitch.Case>
 
     <EntitySwitch.Case>
@@ -137,6 +172,45 @@ const overviewContent = (
     <Grid item md={8} xs={12}>
       <EntityHasSubcomponentsCard variant="gridItem" />
     </Grid>
+    <EntitySwitch>
+      <EntitySwitch.Case if={isJenkinsAvailable}>
+        <Grid item sm={6}>
+          <EntityLatestJenkinsRunCard branch="a,b" variant="gridItem" />
+        </Grid>
+      </EntitySwitch.Case>
+    </EntitySwitch>
+    <EntitySwitch>
+      <EntitySwitch.Case if={e => Boolean(isArgocdAvailable(e))}>
+        <Grid item sm={4}>
+          <EntityArgoCDOverviewCard />
+        </Grid>
+      </EntitySwitch.Case>
+    </EntitySwitch>
+    <EntitySwitch>
+      <EntitySwitch.Case if={isGitlabAvailable}>
+        <Grid item md={12}>
+          <EntityGitlabReadmeCard />
+        </Grid>
+        <Grid item sm={12} md={3} lg={3}>
+          <EntityGitlabPeopleCard />
+        </Grid>
+        <Grid item sm={12} md={3} lg={3}>
+          <EntityGitlabLanguageCard />
+        </Grid>
+        <Grid item sm={12} md={3} lg={3}>
+          <EntityGitlabMergeRequestStatsCard />
+        </Grid>
+        <Grid item sm={12} md={3} lg={3}>
+          <EntityGitlabReleasesCard />
+        </Grid>
+        <Grid item md={12}>
+          <EntityGitlabPipelinesTable />
+        </Grid>
+        <Grid item md={12}>
+          <EntityGitlabMergeRequestsTable />
+        </Grid>
+      </EntitySwitch.Case>
+    </EntitySwitch>
   </Grid>
 );
 
@@ -144,6 +218,14 @@ const serviceEntityPage = (
   <EntityLayout>
     <EntityLayout.Route path="/" title="Overview">
       {overviewContent}
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/kubernetes" title="Kubernetes">
+      <EntityKubernetesContent refreshIntervalMs={30000} />
+    </EntityLayout.Route>
+
+    <EntityLayout.Route if={isGitlabAvailable} path="/gitlab" title="Gitlab">
+      <EntityGitlabContent />
     </EntityLayout.Route>
 
     <EntityLayout.Route path="/ci-cd" title="CI/CD">
@@ -186,6 +268,10 @@ const websiteEntityPage = (
 
     <EntityLayout.Route path="/ci-cd" title="CI/CD">
       {cicdContent}
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/kubernetes" title="Kubernetes">
+      <EntityKubernetesContent refreshIntervalMs={30000} />
     </EntityLayout.Route>
 
     <EntityLayout.Route path="/dependencies" title="Dependencies">

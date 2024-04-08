@@ -39,3 +39,23 @@ spec:
     message ExampleMessage {
       string example = 1;
     };
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: artist-lookup
+  annotations:
+    'argocd/app-name': test
+    'jenkins.io/job-full-name': default:test
+    'backstage.io/techdocs-ref': dir:.
+    'gitlab.com/project-id': '55593875'
+    'backstage.io/kubernetes-id': 'kind'
+    'backstage.io/kubernetes-namespace': kubernetes-dashboard
+    'backstage.io/kubernetes-label-selector': 'k8s-app=kubernetes-dashboard'
+    'backstage.io/kubernetes-cluster': 'kind'
+spec:
+  type: website
+  owner: guests
+  system: examples
+  lifecycle: experimental

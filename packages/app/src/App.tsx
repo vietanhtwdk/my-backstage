@@ -26,6 +26,9 @@ import { apis } from './apis';
 import { entityPage } from './components/catalog/EntityPage';
 import { searchPage } from './components/search/SearchPage';
 import { Root } from './components/Root';
+import { ThemeProvider } from '@material-ui/core/styles';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import LightIcon from '@material-ui/icons/WbSunny';
 
 import {
   AlertDisplay,
@@ -37,6 +40,11 @@ import { AppRouter, FlatRoutes } from '@backstage/core-app-api';
 import { CatalogGraphPage } from '@backstage/plugin-catalog-graph';
 import { RequirePermission } from '@backstage/plugin-permission-react';
 import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
+import { githubAuthApiRef, gitlabAuthApiRef } from '@backstage/core-plugin-api';
+import { UnifiedThemeProvider } from '@backstage/theme';
+import myTheme from './theme/myTheme';
+import { HomepageCompositionRoot } from '@backstage/plugin-home';
+import { DefaultTemplate } from './components/home/HomePage';
 
 const app = createApp({
   apis,
@@ -57,14 +65,48 @@ const app = createApp({
       catalogIndex: catalogPlugin.routes.catalogIndex,
     });
   },
+  themes: [
+    {
+      id: 'my-theme',
+      title: 'My Custom Theme',
+      variant: 'light',
+      icon: <LightIcon />,
+      Provider: ({ children }) => (
+        <UnifiedThemeProvider theme={myTheme} children={children} />
+      ),
+    },
+  ],
   components: {
-    SignInPage: props => <SignInPage {...props} auto providers={['guest']} />,
+    SignInPage: props => (
+      <SignInPage
+        {...props}
+        auto
+        providers={[
+          'guest',
+          {
+            id: 'github-auth-provider',
+            title: 'GitHub',
+            message: 'Sign in using GitHub',
+            apiRef: githubAuthApiRef,
+          },
+          {
+            id: 'gitlab-auth-provider',
+            title: 'GitLab',
+            message: 'Sign in using GitLab',
+            apiRef: gitlabAuthApiRef,
+          },
+        ]}
+      />
+    ),
   },
 });
 
 const routes = (
   <FlatRoutes>
-    <Route path="/" element={<Navigate to="catalog" />} />
+    {/* <Route path="/" element={<Navigate to="catalog" />} /> */}
+    <Route path="/" element={<HomepageCompositionRoot />}>
+      <DefaultTemplate />
+    </Route>
     <Route path="/catalog" element={<CatalogIndexPage />} />
     <Route
       path="/catalog/:namespace/:kind/:name"
